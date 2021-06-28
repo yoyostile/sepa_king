@@ -10,10 +10,11 @@ module SEPA
   private
     # Find groups of transactions which share the same values of some attributes
     def transaction_group(transaction)
-      { requested_date: transaction.requested_date,
-        batch_booking:  transaction.batch_booking,
-        service_level:  transaction.service_level,
-        category_purpose: transaction.category_purpose
+      { requested_date:      transaction.requested_date,
+        batch_booking:       transaction.batch_booking,
+        service_level:       transaction.service_level,
+        instructed_priority: transaction.instructed_priority,
+        category_purpose:    transaction.category_purpose
       }
     end
 
@@ -28,6 +29,9 @@ module SEPA
           builder.NbOfTxs(transactions.length)
           builder.CtrlSum('%.2f' % amount_total(transactions))
           builder.PmtTpInf do
+            if group[:instructed_priority]
+              builder.InstrPrty(group[:instructed_priority])
+            end
             if group[:service_level]
               builder.SvcLvl do
                 builder.Cd(group[:service_level])
@@ -87,7 +91,16 @@ module SEPA
               builder.BIC(transaction.bic)
             end
           end
+        elsif transaction.sort_code
+          builder.CdtrAgt do
+            builder.FinInstnId do
+              builder.ClrSysMmbId do
+                builder.MmbId(transaction.sort_code)
+              end
+            end
+          end
         end
+
         builder.Cdtr do
           builder.Nm(transaction.name)
           if transaction.creditor_address

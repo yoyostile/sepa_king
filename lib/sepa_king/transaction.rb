@@ -9,6 +9,7 @@ module SEPA
     attr_accessor :name,
                   :iban,
                   :bic,
+                  :sort_code,
                   :amount,
                   :instruction,
                   :reference,
