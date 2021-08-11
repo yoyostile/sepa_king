@@ -45,7 +45,7 @@ describe SEPA::CreditTransferTransaction do
       end
 
       it 'should succeed for valid attributes (GBP)' do
-        expect(SEPA::CreditTransferTransaction.new(:sort_code => '123456', :currency => 'GBP', :service_level => 'NURG')).to be_schema_compatible('pain.001.001.03')
+        expect(SEPA::CreditTransferTransaction.new(:sort_code => '123456', :bank_address => { :country_code => 'GB' }, :currency => 'GBP', :service_level => 'NURG')).to be_schema_compatible('pain.001.001.03')
       end
 
       it 'should fail for invalid attributes' do

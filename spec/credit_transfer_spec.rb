@@ -15,6 +15,17 @@ describe SEPA::CreditTransfer do
         SEPA::CreditTransfer.new
       }.to_not raise_error
     end
+
+    it 'should accept address' do
+      expect {
+       SEPA::CreditTransfer.new name:       'Schuldner GmbH',
+                                bic:        'BANKDEFFXXX',
+                                iban:       'DE87200500001234567890',
+                                address: SEPA::Address.new(
+                                  country_code: 'DE'
+                                )
+      }.to_not raise_error
+    end
   end
 
   describe :add_transaction do

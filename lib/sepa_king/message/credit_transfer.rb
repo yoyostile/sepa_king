@@ -18,6 +18,25 @@ module SEPA
       }
     end
 
+    def build_postal_address(builder, address)
+      # Only set the fields that are actually provided.
+      # StrtNm, BldgNb, PstCd, TwnNm provide a structured address
+      # separated into its individual fields.
+      # AdrLine provides the address in free format text.
+      # Both are currently allowed and the actual preference depends on the bank.
+      # Also the fields that are required legally may vary depending on the country
+      # or change over time.
+      builder.PstlAdr do
+        builder.StrtNm address.street_name     if address.street_name
+        builder.BldgNb address.building_number if address.building_number
+        builder.PstCd address.post_code        if address.post_code
+        builder.TwnNm address.town_name        if address.town_name
+        builder.Ctry address.country_code      if address.country_code
+        builder.AdrLine address.address_line1  if address.address_line1
+        builder.AdrLine address.address_line2  if address.address_line2
+      end
+    end
+
     def build_payment_informations(builder)
       # Build a PmtInf block for every group of transactions
       grouped_transactions.each do |group, transactions|
@@ -46,6 +65,7 @@ module SEPA
           builder.ReqdExctnDt(group[:requested_date].iso8601)
           builder.Dbtr do
             builder.Nm(account.name)
+            build_postal_address(builder, account.address) if account.address
           end
           builder.DbtrAcct do
             builder.Id do
@@ -85,62 +105,23 @@ module SEPA
         builder.Amt do
           builder.InstdAmt('%.2f' % transaction.amount, Ccy: transaction.currency)
         end
-        if transaction.bic
+        if transaction.bic || transaction.sort_code
           builder.CdtrAgt do
             builder.FinInstnId do
-              builder.BIC(transaction.bic)
-            end
-          end
-        elsif transaction.sort_code
-          builder.CdtrAgt do
-            builder.FinInstnId do
-              builder.ClrSysMmbId do
-                builder.MmbId(transaction.sort_code)
+              builder.BIC(transaction.bic) if transaction.bic
+              if transaction.sort_code
+                builder.ClrSysMmbId do
+                  builder.MmbId(transaction.sort_code)
+                end
               end
+              build_postal_address(builder, transaction.bank_address) if transaction.bank_address
             end
           end
         end
 
         builder.Cdtr do
           builder.Nm(transaction.name)
-          if transaction.creditor_address
-            builder.PstlAdr do
-              # Only set the fields that are actually provided.
-              # StrtNm, BldgNb, PstCd, TwnNm provide a structured address
-              # separated into its individual fields.
-              # AdrLine provides the address in free format text.
-              # Both are currently allowed and the actual preference depends on the bank.
-              # Also the fields that are required legally may vary depending on the country
-              # or change over time.
-              if transaction.creditor_address.street_name
-                builder.StrtNm transaction.creditor_address.street_name
-              end
-
-              if transaction.creditor_address.building_number
-                builder.BldgNb transaction.creditor_address.building_number
-              end
-
-              if transaction.creditor_address.post_code
-                builder.PstCd transaction.creditor_address.post_code
-              end
-
-              if transaction.creditor_address.town_name
-                builder.TwnNm transaction.creditor_address.town_name
-              end
-
-              if transaction.creditor_address.country_code
-                builder.Ctry transaction.creditor_address.country_code
-              end
-
-              if transaction.creditor_address.address_line1
-                builder.AdrLine transaction.creditor_address.address_line1
-              end
-
-              if transaction.creditor_address.address_line2
-                builder.AdrLine transaction.creditor_address.address_line2
-              end
-            end
-          end
+          build_postal_address(builder, transaction.creditor_address) if transaction.creditor_address
         end
         builder.CdtrAcct do
           builder.Id do

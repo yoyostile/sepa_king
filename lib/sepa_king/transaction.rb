@@ -10,6 +10,7 @@ module SEPA
                   :iban,
                   :bic,
                   :sort_code,
+                  :bank_address,
                   :amount,
                   :instruction,
                   :reference,
